@@ -3,13 +3,39 @@
 /**
  * Description of Grocery_CRUD_Ext
  *  
- * @author Abdelaziz Elrashed
- * 
+ * @author Abdelaziz Elrashed <aeemh.sdn@gmail.com>
+ * @copyright RAE Company For Environmental Services, 2016
  **/
 
 class Grocery_CRUD_Ext {
 
 	public function __construct(){}
+
+	/**
+	* Description of vzool_nested_crud
+	*
+ 
+		// Made for nested structure tables
+		// something like for Country -> City -> Municipality -> Neighborhood -> Place
+
+		// USAGE:
+
+		$args = func_get_args();
+			
+		$map = [
+			"TABEL_NAME" => [
+				"ref" => "FK_FIELD",
+				"link_column" => "COLUMN_NAME_LINK_ASSOCIATIVE",
+				"set_subject" => "SUBJECT_NAME",
+				"next_depth" => "SUB_TABLE_NAME",
+			],
+		];
+
+		$base_table => "Start point"
+
+		$function_name = strtolower(__CLASS__ .'/'. __FUNCTION__)
+	*
+	*/
 
 	public function vzool_nested_crud($args, $map, $base_table, $function_name){
 
