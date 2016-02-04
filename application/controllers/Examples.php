@@ -258,19 +258,20 @@ class Examples extends CI_Controller {
 
 		$base_table = 'country';
 		
-		// Map
+		// Map (Required)
 
 		$map = [
 
 			/* 
 				// Made for nested structure tables
-				// something like Country -> City -> Municipality -> Neighborhood -> Place
+				// something like for Country -> City -> Municipality -> Neighborhood -> Place
 
 				// USAGE
 
 				"TABEL_NAME" => [
 					"ref" => "FK_FIELD",
 					"link_column" => "COLUMN_NAME_LINK_ASSOCIATIVE",
+					"set_subject" => "SUBJECT_NAME",
 					"next_depth" => "SUB_TABLE_NAME",
 				],
 
@@ -279,37 +280,83 @@ class Examples extends CI_Controller {
 			$base_table => [
 				"ref" => null,
 				"link_column" => "name",
+				"set_subject" => "الدولة",
 				"next_depth" => "city",
 			],
 			"city" => [
 				"ref" => "country_id",
 				"link_column" => "name",
+				"set_subject" => "المدينة",
 				"next_depth" => "municipality",
 			],
 			"municipality" => [
 				"ref" => "city_id",
 				"link_column" => "name",
+				"set_subject" => "البلدية",
 				"next_depth" => "neighborhood",
 			],
 			"neighborhood" => [
 				"ref" => "municipality_id",
 				"link_column" => "name",
+				"set_subject" => "الحي",
 				"next_depth" => "place",
 			],
 			"place" => [
 				"ref" => "neighborhood_id",
 				"link_column" => "name",
+				"set_subject" => "المكان",
 				"next_depth" => null,
 			],
 		];
+
+		// vZool Deep Logic Function (Required)
+
+		$crud = $this->_vzool_nested_crud(func_get_args(), $map, $base_table, strtolower(__CLASS__ .'/'. __FUNCTION__));
+
+		// Your LOGIC Here
+
+       	$crud->set_language("arabic");
+
+		switch($base_table){
+			
+			case 'country':
+
+				$crud->display_as('name','الاسم');
+
+			break;
+
+			case 'project':
+					
+				// ...
+
+			break;
+
+			// .
+		}
+
+		// ...
+
+		/* --------------------------------------------------------- */
+
+		// OUTPUT  (Required)
+		$output = $crud->render();
+
+		$this->_example_output($output);
+	}
+
+	private function _vzool_nested_crud($args, $map, $base_table, $function_name){
 
 		/*##########################################################*/
 		/*##################### DEEP LOGIC #########################*/
 		/*##########################################################*/
 
+		$is_debug = false;
+
+		$is_ajax_list = false;
+
 		$base_url = current_url();
 
-		$args = func_get_args();
+		$html_links = '';
 
 		$functions = [
 			'add',
@@ -343,7 +390,7 @@ class Examples extends CI_Controller {
 			if(in_array($last_section, $functions)){
 
 				if($args_count > 1){
-					
+						
 					$last_section = $args[$args_count - 2];
 
 				}else{
@@ -351,7 +398,8 @@ class Examples extends CI_Controller {
 					$last_section = $base_table;
 				}
 
-			}elseif(strpos($base_url, 'edit') || strpos($base_url, 'update_validation') || strpos($base_url, 'update') || strpos($base_url, 'delete')){
+			}elseif(strpos($base_url, 'edit') 	|| strpos($base_url, 'update_validation') ||
+					strpos($base_url, 'update') || strpos($base_url, 'delete')){
 				
 				if($args_count > 2){
 
@@ -361,24 +409,116 @@ class Examples extends CI_Controller {
 
 					$last_section = $base_table;
 				}
-
-			}elseif (strpos($base_url, 'ajax_list')) {
-
-
 			}
-
-			print_r("<h3>TMP: $last_section - $args_count</h3>");
 
 			$base_table = $last_section;
 		}
 		
+		if($base_table === 'ajax_list'){
+			// $base_table = $args[sizeof($args) - 2];
+			// unset($args[$args_count - 1]);
+			// $args_count = sizeof($args);
+			$is_ajax_list = true;
+		}
+
 		if (strpos($base_url, $base_table) === false){
 			$base_url .= '/' . $base_table;
 		}
 
-		print_r($base_url. '<br/>');
-		print_r(strpos($base_url, 'edit'). '<br/>');
-		print_r($args);
+		/*  BUILD LINKS */
+
+		$links_table = array();
+		$links_ref_id = array();
+
+		foreach ($args as $k => $v) {
+			
+			if ($k % 2 == 0) {
+				
+				$links_table[] = $v;
+
+			}else {
+
+				$links_ref_id[] = $v;
+			}
+		}
+
+		if($links_table){
+			unset($links_table[sizeof($links_table) - 1]);
+		}
+
+		$links_ref_map = [];
+
+		if($links_table && $links_ref_id){
+
+			$long_url = '';
+
+			$last_parent_id = null;
+
+			foreach($links_table as $k => $v){
+
+				$query = $this->db->get_where($links_table[$k], array('id' => $links_ref_id[$k]), 1);
+
+				foreach($query->result() as $f){
+
+					if(!$long_url){
+
+						$long_url .= '/'. $links_table[$k];
+
+					}else{
+
+						$long_url .= '/'. $last_parent_id .'/'. $links_table[$k];
+					}
+
+					$links_ref_map[ $links_table[$k] ] = [
+						'id' => $links_ref_id[$k],
+						'name' => $f->name,
+						'url' => base_url($function_name . $long_url),
+					];
+
+				}
+				
+				$last_parent_id = $links_ref_id[$k];
+			}
+		}
+
+		if($links_ref_map){
+
+			$html_links .= "<ul class='links'>";
+			
+			foreach($links_ref_map as $link){
+
+				$html_links .= "<li><a href='{$link['url']}'>{$link['name']}</a></li>";
+			}
+
+			$html_links .= "</ul>";
+		}
+
+		/*  BUILD LINKS */
+
+		if($is_debug){
+
+			$debug_stack = [
+				'URL' => $base_url,
+				'TABLE' => $base_table,
+				'IS_AJAX' => ($is_ajax_list ? 'YES' : 'NO'),
+				'args' => $args,
+				'LINKS' => [
+					$links_table,
+					$links_ref_id,
+					$links_ref_map,
+					$html_links,
+				],
+			];
+
+			if(isset($map[$base_table])){
+
+				$debug_stack['SUBJECT'] = $map[$base_table]['set_subject'];
+			}
+
+			echo "<pre>";
+			print_r($debug_stack);
+			echo "</pre>";
+		}
 
 		$crud = new grocery_CRUD();
 
@@ -398,13 +538,17 @@ class Examples extends CI_Controller {
 			// Column CallBack
 			if($map[$base_table]['link_column']){
 
-				$crud->callback_column($map[$base_table]['link_column'], function() use($base_url, $map, $base_table){
+				$crud->callback_column($map[$base_table]['link_column'], function() use($base_url, $map, $base_table, $is_ajax_list){
 
 					$x = func_get_args();
 
 					if($map[$base_table]['next_depth']){
 
 						$url = $base_url . '/' . $x[1]->id . '/' . $map[$base_table]['next_depth'];
+
+						/*if($is_ajax_list){
+							$url = str_replace('ajax_list/', '', $url);
+						}*/
 
 						return "<a href='$url'>{$x[0]}</a>";
 						
@@ -426,50 +570,25 @@ class Examples extends CI_Controller {
 				return $data;
 			});
 		}
+
+		if($map[$base_table]['set_subject']){
+
+			$crud->set_subject($map[$base_table]['set_subject']);
+		}
 		
 		$crud->unset_columns($ignore);
 
 		foreach($ignore as $f){
 			$crud->change_field_type($f,'invisible');
 		}
+		
+		$crud->links = $html_links;
 
 		/*##########################################################*/
 		/*##################### DEEP LOGIC #########################*/
 		/*##########################################################*/
 
-		// Your LOGIC Here
-
-       	$crud->set_language("arabic");
-
-		switch($base_table){
-			
-			case 'country':
-
-				$crud->set_subject("الدولة");
-
-			break;
-
-			case 'project':
-				
-				$crud->set_subject("المشروع");
-
-			break;
-
-			// ..
-		}
-
-		// ...
-
-		/* --------------------------------------------------------- */
-
-		// OUTPUT
-		$output = $crud->render();
-
-		$this->_example_output($output);
-	}
-
-	function _vzool_nested_crud($args){
-		
+		return $crud;
 	}
 
 }
