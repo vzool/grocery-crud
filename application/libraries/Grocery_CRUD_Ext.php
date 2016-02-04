@@ -15,12 +15,12 @@ class Grocery_CRUD_Ext {
 	* Description of vzool_nested_crud
 	*
  
-		// Made for nested structure tables
+		// Made to handle nested structure of tables
 		// something like for Country -> City -> Municipality -> Neighborhood -> Place
 
 		// USAGE:
 
-		$args = func_get_args();
+		$args = func_get_args() [Static]
 			
 		$map = [
 			"TABEL_NAME" => [
@@ -31,9 +31,10 @@ class Grocery_CRUD_Ext {
 			],
 		];
 
-		$base_table => "Start point"
+		$base_table => Start point similar to `Country`
 
-		$function_name = strtolower(__CLASS__ .'/'. __FUNCTION__)
+		$function_name = strtolower(__CLASS__ .'/'. __FUNCTION__) [Static]
+
 	*
 	*/
 
