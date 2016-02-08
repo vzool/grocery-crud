@@ -44,9 +44,11 @@ class Grocery_CRUD_Ext {
 		/*##################### DEEP LOGIC #########################*/
 		/*##########################################################*/
 
-		$is_debug = false;
+		$is_debug = !false;
 
 		$is_ajax_list = false;
+
+		$current_table = $base_table;
 
 		$base_url = current_url();
 
@@ -92,6 +94,21 @@ class Grocery_CRUD_Ext {
 					$last_section = $base_table;
 				}
 
+				if($is_debug){
+					echo "<h3>IF #1</h3>";
+				}
+
+			}elseif(strpos($base_url, 'delete_file')){
+
+				$tmp = explode("/delete_file", $base_url);
+				$tmp = explode("/", $tmp[0]);
+
+				$last_section = end($tmp);
+
+				if($is_debug){
+					echo "<h3>IF #4</h3>";
+				}
+
 			}elseif(strpos($base_url, 'edit') 	|| strpos($base_url, 'update_validation') ||
 					strpos($base_url, 'update') || strpos($base_url, 'delete')){
 				
@@ -103,12 +120,27 @@ class Grocery_CRUD_Ext {
 
 					$last_section = $base_table;
 				}
+
+				if($is_debug){
+					echo "<h3>IF #2</h3>";
+				}
+
+			}elseif(strpos($base_url, 'upload_file')){
+
+				$tmp = explode("/upload_file", $base_url);
+				$tmp = explode("/", $tmp[0]);
+
+				$last_section = end($tmp);
+
+				if($is_debug){
+					echo "<h3>IF #3</h3>";
+				}
 			}
 
-			$base_table = $last_section;
+			$current_table = $last_section;
 		}
 		
-		if($base_table === 'ajax_list'){
+		if($current_table === 'ajax_list'){
 			// $base_table = $args[sizeof($args) - 2];
 			// unset($args[$args_count - 1]);
 			// $args_count = sizeof($args);
@@ -117,6 +149,7 @@ class Grocery_CRUD_Ext {
 
 		if (strpos($base_url, $base_table) === false){
 			$base_url .= '/' . $base_table;
+			redirect($base_url);
 		}
 
 		/* ------------------------ BUILD LINKS ------------------------ */
@@ -167,9 +200,18 @@ class Grocery_CRUD_Ext {
 
 					$links_ref_map[ $links_table[$k] ] = [
 						'id' => $links_ref_id[$k],
-						'name' => $f->name,
 						'url' => base_url($function_name . $long_url),
 					];
+
+					if(isset($map[$links_table[$k]]['link_column'])){
+
+						$link = $map[$links_table[$k]]['link_column'];
+
+						if(isset($f->{$link})){
+
+							$links_ref_map[ $links_table[$k] ]['name'] = $f->{$link};
+						}
+					}
 				}
 				
 				$last_parent_id = $links_ref_id[$k];
@@ -195,7 +237,7 @@ class Grocery_CRUD_Ext {
 
 			$debug_stack = [
 				'URL' => $base_url,
-				'TABLE' => $base_table,
+				'TABLE' => $current_table,
 				'IS_AJAX' => ($is_ajax_list ? 'YES' : 'NO'),
 				'args' => $args,
 				'LINKS' => [
@@ -206,9 +248,9 @@ class Grocery_CRUD_Ext {
 				],
 			];
 
-			if(isset($map[$base_table])){
+			if(isset($map[$current_table])){
 
-				$debug_stack['SUBJECT'] = $map[$base_table]['set_subject'];
+				$debug_stack['SUBJECT'] = $map[$current_table]['set_subject'];
 			}
 
 			echo "<pre>";
@@ -219,29 +261,29 @@ class Grocery_CRUD_Ext {
 
 		$crud = new grocery_CRUD();
 
-		$crud->set_table($base_table);
+		$crud->set_table($current_table);
 
-		if(in_array($base_table, array_keys($map))){
+		if(in_array($current_table, array_keys($map))){
 			
-			if($map[$base_table]['ref']){
+			if($map[$current_table]['ref']){
 
 				$parent_id = $args[sizeof($args) - 3];
 
-				$crud->where($map[$base_table]['ref'], $args[sizeof($args) - 2]);
+				$crud->where($map[$current_table]['ref'], $args[sizeof($args) - 2]);
 
-				$ignore []= $map[$base_table]['ref'];
+				$ignore []= $map[$current_table]['ref'];
 			}
 
 			// Column CallBack
-			if($map[$base_table]['link_column']){
+			if($map[$current_table]['link_column']){
 
-				$crud->callback_column($map[$base_table]['link_column'], function() use($base_url, $map, $base_table, $is_ajax_list){
+				$crud->callback_column($map[$current_table]['link_column'], function() use($base_url, $map, $current_table, $is_ajax_list){
 
 					$x = func_get_args();
 
-					if($map[$base_table]['next_depth']){
+					if($map[$current_table]['next_depth']){
 
-						$url = $base_url . '/' . $x[1]->id . '/' . $map[$base_table]['next_depth'];
+						$url = $base_url . '/' . $x[1]->id . '/' . $map[$current_table]['next_depth'];
 
 						/*if($is_ajax_list){
 							$url = str_replace('ajax_list/', '', $url);
@@ -257,20 +299,20 @@ class Grocery_CRUD_Ext {
 			}
 
 			// Before Insert CallBack
-			$crud->callback_before_insert(function($data) use($base_url, $map, $base_table, $crud, $parent_id){
+			$crud->callback_before_insert(function($data) use($base_url, $map, $current_table, $crud, $parent_id){
 
-				if($map[$base_table]['ref']){
+				if($map[$current_table]['ref']){
 
-					$data[$map[$base_table]['ref']] = $parent_id;
+					$data[$map[$current_table]['ref']] = $parent_id;
 				}
 
 				return $data;
 			});
 		}
 
-		if($map[$base_table]['set_subject']){
+		if(isset($map[$current_table]['set_subject'])){
 
-			$crud->set_subject($map[$base_table]['set_subject']);
+			$crud->set_subject($map[$current_table]['set_subject']);
 		}
 		
 		$crud->unset_columns($ignore);
