@@ -83,8 +83,6 @@ class Grocery_CRUD_Ext {
 		if(strpos($base_url, 'ajax_list')){
 
 			$is_ajax = true;
-
-			// $base_url = str_replace('/ajax_list', '', $base_url);
 		}
 
 		if($args){
@@ -273,7 +271,6 @@ class Grocery_CRUD_Ext {
 			if($map[$current_table]['ref']){
 
 				$parent_id = $args[sizeof($args) - 3];
-
 
 				$col = $map[$current_table]['ref'];
 				$ref_id = $args[sizeof($args) - 2];
