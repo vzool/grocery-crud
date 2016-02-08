@@ -44,15 +44,18 @@ class Grocery_CRUD_Ext {
 		/*##################### DEEP LOGIC #########################*/
 		/*##########################################################*/
 
-		$is_debug = !false;
+		$is_debug = false;
 
-		$is_ajax_list = false;
+		$debug_stack = [];
+		$debug_stack['trace'] = [];
 
 		$current_table = $base_table;
 
 		$base_url = current_url();
 
 		$html_links = '';
+
+		$is_ajax = false;
 
 		$functions = [
 			'add',
@@ -65,7 +68,7 @@ class Grocery_CRUD_Ext {
 			'delete',
 			'update',
 			'ajax_list_info',
-			// 'ajax_list',
+			'ajax_list',
 		];
 
 		$ignore = [
@@ -76,6 +79,13 @@ class Grocery_CRUD_Ext {
 		$parent_id = null;
 
 		$args_count = sizeof($args);
+
+		if(strpos($base_url, 'ajax_list')){
+
+			$is_ajax = true;
+
+			// $base_url = str_replace('/ajax_list', '', $base_url);
+		}
 
 		if($args){
 
@@ -138,13 +148,6 @@ class Grocery_CRUD_Ext {
 			}
 
 			$current_table = $last_section;
-		}
-		
-		if($current_table === 'ajax_list'){
-			// $base_table = $args[sizeof($args) - 2];
-			// unset($args[$args_count - 1]);
-			// $args_count = sizeof($args);
-			$is_ajax_list = true;
 		}
 
 		if (strpos($base_url, $base_table) === false){
@@ -233,12 +236,18 @@ class Grocery_CRUD_Ext {
 		/* ------------------------ BUILD LINKS ------------------------ */
 		
 		/* ------------------------ DEBUG SPOT ------------------------ */
+
 		if($is_debug){
 
-			$debug_stack = [
+			$debug_stack['info'] = [
 				'URL' => $base_url,
-				'TABLE' => $current_table,
-				'IS_AJAX' => ($is_ajax_list ? 'YES' : 'NO'),
+				'BASE_TABLE' => $base_table,
+				'CURRENT_TABLE' => $current_table,
+				'AJAX' => ($is_ajax ? 'YES' : 'NO'),
+				'parent' => [
+					'id' => $parent_id,
+					'last_id' => $last_parent_id,
+				],
 				'args' => $args,
 				'LINKS' => [
 					$links_table,
@@ -250,12 +259,8 @@ class Grocery_CRUD_Ext {
 
 			if(isset($map[$current_table])){
 
-				$debug_stack['SUBJECT'] = $map[$current_table]['set_subject'];
+				$debug_stack['info']['SUBJECT'] = $map[$current_table]['set_subject'];
 			}
-
-			echo "<pre>";
-			print_r($debug_stack);
-			echo "</pre>";
 		}
 		/* ------------------------ DEBUG SPOT ------------------------ */
 
@@ -269,7 +274,22 @@ class Grocery_CRUD_Ext {
 
 				$parent_id = $args[sizeof($args) - 3];
 
-				$crud->where($map[$current_table]['ref'], $args[sizeof($args) - 2]);
+
+				$col = $map[$current_table]['ref'];
+				$ref_id = $args[sizeof($args) - 2];
+				
+				if($is_ajax){
+
+					$ref_id = $args[sizeof($args) - 3];
+				}
+
+				$debug_stack['trace']['parent_id'] = $parent_id;
+				$debug_stack['trace']['where'] = [
+					$col,
+					$ref_id,
+				];
+
+				$crud->where($col, $ref_id);
 
 				$ignore []= $map[$current_table]['ref'];
 			}
@@ -277,7 +297,7 @@ class Grocery_CRUD_Ext {
 			// Column CallBack
 			if($map[$current_table]['link_column']){
 
-				$crud->callback_column($map[$current_table]['link_column'], function() use($base_url, $map, $current_table, $is_ajax_list){
+				$crud->callback_column($map[$current_table]['link_column'], function() use($base_url, $map, $current_table){
 
 					$x = func_get_args();
 
@@ -285,9 +305,7 @@ class Grocery_CRUD_Ext {
 
 						$url = $base_url . '/' . $x[1]->id . '/' . $map[$current_table]['next_depth'];
 
-						/*if($is_ajax_list){
-							$url = str_replace('ajax_list/', '', $url);
-						}*/
+						$url = str_replace('ajax_list/', '', $url);
 
 						return "<a href='$url'>{$x[0]}</a>";
 						
@@ -322,6 +340,15 @@ class Grocery_CRUD_Ext {
 		}
 		
 		$crud->links = $html_links;
+
+		/* ------------------------ DEBUG SPOT ------------------------ */
+		if($is_debug){
+
+			echo "<pre>";
+			print_r($debug_stack);
+			echo "</pre>";
+		}
+		/* ------------------------ DEBUG SPOT ------------------------ */
 
 		/*##########################################################*/
 		/*##################### DEEP LOGIC #########################*/
