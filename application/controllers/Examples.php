@@ -321,7 +321,7 @@ class Examples extends CI_Controller {
 
        	$crud->set_language("arabic"); // global options for all tables
 
-		switch($base_table){ // custom options for some tables
+		switch($crud->current_table){ // custom options for some tables
 			
 			case 'country':
 

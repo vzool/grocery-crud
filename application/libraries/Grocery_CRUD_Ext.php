@@ -153,6 +153,16 @@ class Grocery_CRUD_Ext {
 
 		$uri_segments = explode("/", $base_url);
 
+		if(is_numeric($current_table)){
+
+			array_pop($uri_segments);
+			array_pop($uri_segments);
+			
+			$new_url = join("/", $uri_segments);
+			
+			redirect($new_url);
+		}
+
 		$url_base_rule = '/index/' . $base_table;
 
 		if (!in_array($base_table, $uri_segments)){
