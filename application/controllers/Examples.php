@@ -313,7 +313,7 @@ class Examples extends CI_Controller {
 
 		// vZool Deep Logic Function (Required)
 
-		$crud = $this->grocery_crud_ext->vzool_nested_crud(func_get_args(), $map, $base_table, strtolower(__CLASS__ .'/'. __FUNCTION__));
+		$crud = $this->grocery_crud_ext->vzool_nested_crud(func_get_args(), $map, $base_table, __CLASS__, __FUNCTION__);
 
 		/* --------------------------------------------------------- */
 

@@ -38,11 +38,13 @@ class Grocery_CRUD_Ext {
 	*
 	*/
 
-	public function vzool_nested_crud($args, $map, $base_table, $function_name){
+	public function vzool_nested_crud($args, $map, $base_table, $class_ref_name, $class_function_ref_name){
 
 		/*##########################################################*/
 		/*##################### DEEP LOGIC #########################*/
 		/*##########################################################*/
+
+		$function_name = strtolower("$class_ref_name/$class_function_ref_name");
 
 		$is_debug = false;
 
@@ -77,6 +79,7 @@ class Grocery_CRUD_Ext {
 		];
 
 		$parent_id = null;
+		$last_parent_id = null;
 
 		$args_count = sizeof($args);
 
@@ -148,9 +151,31 @@ class Grocery_CRUD_Ext {
 			$current_table = $last_section;
 		}
 
-		if (strpos($base_url, $base_table) === false){
-			$base_url .= '/' . $base_table;
+		$uri_segments = explode("/", $base_url);
+
+		$url_base_rule = '/index/' . $base_table;
+
+		if (!in_array($base_table, $uri_segments)){
+
+			if(end($uri_segments) === strtolower($class_ref_name)){
+
+				$base_url .= $url_base_rule;
+
+			}else{
+				
+				$base_url .= '/' . $base_table;
+			}
+			
 			redirect($base_url);
+
+		}else{
+
+			if(end($uri_segments) === strtolower($class_ref_name) && !strpos($base_url, $url_base_rule)){
+				
+				$base_url .= $url_base_rule;
+				
+				redirect($base_url);
+			}
 		}
 
 		/* ------------------------ BUILD LINKS ------------------------ */
@@ -179,8 +204,6 @@ class Grocery_CRUD_Ext {
 		if($links_table && $links_ref_id){
 
 			$long_url = '';
-
-			$last_parent_id = null;
 
 			$ci = &get_instance();
 
@@ -336,6 +359,8 @@ class Grocery_CRUD_Ext {
 			$crud->change_field_type($f,'invisible');
 		}
 		
+		$crud->current_table = $current_table;
+
 		$crud->links = $html_links;
 
 		/* ------------------------ DEBUG SPOT ------------------------ */
